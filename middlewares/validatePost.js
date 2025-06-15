@@ -1,5 +1,5 @@
 export const validatePost = (req, res, next) => {
-    const { author, title, content, cover } = req.body;
+    const { userId, title, content, cover } = req.body;
 
     const isValidUrl = (url) => {
   try {
@@ -11,8 +11,8 @@ export const validatePost = (req, res, next) => {
 };
 
     // Check if all required fields are present
-    if (!author || !title || !content) {
-        return res.status(400).json({ error: "Author, title, and content are required." });
+    if (!userId || !title || !content) {
+        return res.status(400).json({ error: "User ID, title, and content are required." });
     }
 
     // Check if the title is at least 5 characters long
