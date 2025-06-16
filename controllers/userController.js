@@ -5,30 +5,26 @@ import ErrorResponse from '../utils/ErrorResponse.js';
 
 const saltRounds = 10;
 
-const sanitizeUser = (user) => {
-  if (!user) return null;
-  const { password, ...userWithoutPassword } = user.dataValues;
-  return userWithoutPassword;
-};
+
 
 // Create a new user
 export const createUser = asyncHandler(async (req, res) => {
-  const { username, email, password } = req.body;
+  
+  const {
+    body: { username, email, password },
+  } = req;
+
+  const found = await User.findOne({ where: { email } });
+  if (found) throw new ErrorResponse('User already exists!');
+
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-  const newUser = await User.create({
-    username,
-    email,
-    password: hashedPassword,
-  });
-  res.status(201).json(sanitizeUser(newUser));
+  const newUser = await User.create({ username, email, password: hashedPassword });
+  res.status(201).json(newUser);
 });
 
 // Get all users
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.findAll({
-    attributes: ['id', 'username', 'email'],
-    order: [['createdAt', 'DESC']],
-  });
+  const users = await User.findAll();
   res.status(200).json(users);
 });
 

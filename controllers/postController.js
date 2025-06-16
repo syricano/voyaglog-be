@@ -4,25 +4,17 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ErrorResponse from "../utils/ErrorResponse.js";
 
 // Get all posts
-export const getPosts = asyncHandler(async (req, res) => {
-  const posts = await Post.findAll({
-    include: { model: User, as: "author", attributes: ["id", "username", "email"] },
-    order: [["createdAt", "DESC"]],
-  });
+export const getPosts = async (req, res) => {
+  const posts = await Post.findAll({ include: User });
+  res.json(posts);
+};
 
-  res.status(200).json(posts);
-});
 
 // Create a new post
 export const createPost = asyncHandler(async (req, res) => {
-  const { userId, title, content, cover } = req.body;
+  const { body: { userId, title, content, cover } } = req;
 
-  const newPost = await Post.create({
-    userId,
-    title,
-    content,
-    cover,
-  });
+  const newPost = await Post.create(req.body);
 
   res.status(201).json(newPost);
 });

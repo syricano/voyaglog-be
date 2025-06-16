@@ -1,14 +1,10 @@
-export const errorHandler = (err, req, res, next) => {
-    console.error("Error occurred:", err);
+const errorHandler = (err, req, res, next) => {
+    process.env.NODE_ENV !== 'production' && console.error(err.stack);
+    res.status(res.statusCode || 500 ).json({
+        success: false,
+        message: err.message,
 
-    // Set the response status code based on the error type
-    const statusCode = err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    // Send the error response
-    res.status(statusCode).json({
-        status: "error",
-        statusCode,
-        message,
     });
-}
+};
+
+export default errorHandler;
