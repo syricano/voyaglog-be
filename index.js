@@ -17,7 +17,25 @@ app.use(express.json());
 app.use(cors());
 
 app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Welcome to the API' });
+  res.status(200).json({ 
+    message: "Welcome to the Travel Blog API",
+    routes: {
+      users: {
+        list: "GET /api/users",
+        getUserById: "GET /api/users/:id",
+        createUser: "POST /api/users",
+      },
+      posts: {
+        list: "GET /api/posts",
+        getPostById: "GET /api/posts/:id",
+        createPost: "POST /api/posts",
+      },
+      auth: {
+        login: "POST /api/login",
+        register: "POST /api/register",
+      }
+    }
+   });
 });
 app.use('/api/users', userRouter);
 app.use('/api/posts', postRouter);
