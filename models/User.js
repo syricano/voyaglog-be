@@ -2,11 +2,11 @@ import { Model, DataTypes } from "sequelize";
 import sequelize from '../db/index.js';
 
 const User = sequelize.define('User', {
-  username: {
+  firstName: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  password: {
+  lastName: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -14,6 +14,14 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  phone: {
+    type: DataTypes.STRING, // optional
+    allowNull: true
   }
 });
 

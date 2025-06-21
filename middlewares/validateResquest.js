@@ -31,7 +31,7 @@ const middlewareFactory = (model) => (req, res, next) => {
     });
   }
 
-  req.body = parseResult.data; // Use parsed & sanitized data
+  req.body = parseResult.data; 
   next();
 };
 

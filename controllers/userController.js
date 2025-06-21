@@ -11,14 +11,14 @@ const saltRounds = 10;
 export const createUser = asyncHandler(async (req, res) => {
   
   const {
-    body: { username, email, password },
+    body: { firstName, lastName, username, phone , email, password },
   } = req;
 
   const found = await User.findOne({ where: { email } });
   if (found) throw new ErrorResponse('User already exists!');
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-  const newUser = await User.create({ username, email, password: hashedPassword });
+  const newUser = await User.create({ firstName, lastName, username, phone ,email, password: hashedPassword });
   res.status(201).json(newUser);
 });
 
@@ -32,7 +32,7 @@ export const getUsers = asyncHandler(async (req, res) => {
 export const getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id, {
-    attributes: ['id', 'username', 'email'],
+    attributes: ['id', 'firstName', 'lastName', 'username','phone', 'email'],
   });
 
   if (!user) {
@@ -45,21 +45,24 @@ export const getUserById = asyncHandler(async (req, res) => {
 // Update user by ID
 export const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { username, email, password } = req.body;
+  const { firstName, lastName, username, phone , email, password } = req.body;
 
   const user = await User.findByPk(id);
   if (!user) {
     throw new ErrorResponse('User not found', 404);
   }
 
+  user.firstName= firstName || user.firstName;
+  user.lastName = lastName || user.lastName;
   user.username = username || user.username;
+  user.phone = phone || user.phone;
   user.email = email || user.email;
   if (password) {
     user.password = await bcrypt.hash(password, saltRounds);
   }
 
   await user.save();
-  res.status(200).json(sanitizeUser(user));
+  res.status(200).json(user);
 });
 
 // Delete user by ID
