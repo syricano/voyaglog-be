@@ -2,13 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import errorHandler from './middlewares/errorHandler.js';
 import postRouter from './routes/postRouter.js';
-import asyncHandler from './utils/asyncHandler.js';
 import userRouter from './routes/userRouter.js';
-import './db/associations.js'; // Ensure associations are set up
+import sequelize from './db/index.js';
+import './db/associations.js'; 
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-
-
+// Create an instance of express
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -16,6 +20,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
+// Serve uploaded images
+app.use('/uploads', express.static('uploads'));
+
+// Root route
 app.get('/', (req, res) => {
   res.status(200).json({ 
     message: "Welcome to the Travel Blog API",
@@ -37,12 +45,23 @@ app.get('/', (req, res) => {
     }
    });
 });
+
+// Routes
 app.use('/api/users', userRouter);
 app.use('/api/posts', postRouter);
+
+// Error handling middleware
 app.use(errorHandler);
 
 
-
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// DB Sync and Server Start
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('Database synced');
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to sync database:', err);
+  });

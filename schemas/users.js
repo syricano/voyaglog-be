@@ -10,7 +10,7 @@ export const userSchema = {
     password: z.string().min(6).max(100)
   }),
   PUT: z.object({
-    firstName: z.string().min(2).max(100).optional(),
+    firstName: z.string().min(2).max(100).trim(),
     lastName: z.string().min(2).max(100).optional(),
     username: z.string().min(2).max(100).optional(),
     phone: z.string().optional(), // optional field
