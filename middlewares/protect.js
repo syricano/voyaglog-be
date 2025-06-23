@@ -5,31 +5,28 @@ import ErrorResponse from '../utils/ErrorResponse.js';
 
 const jwtSecret = process.env.JWT_SECRET;
 
-const auth = asyncHandler(async (req, res, next) => {
-  let token;
+const protect = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  // Check for token in headers
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return next(new ErrorResponse('Not authorized, token missing', 401));
   }
 
+  const token = authHeader.split(' ')[1];
+
   try {
     const decoded = jwt.verify(token, jwtSecret);
-    const user = await User.findByPk(decoded.id);
 
+    const user = await User.findByPk(decoded.id);
     if (!user) {
-      return next(new ErrorResponse('No user found with this token', 401));
+      return next(new ErrorResponse('User not found', 404));
     }
 
-    req.user = user; // attach user to request
+    req.user = user;
     next();
-  } catch (error) {
+  } catch (err) {
     return next(new ErrorResponse('Not authorized, token invalid', 401));
   }
 });
 
-export default auth;
+export default protect;

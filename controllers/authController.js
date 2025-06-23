@@ -87,3 +87,23 @@ export const login = asyncHandler(async (req, res) => {
     },
   });
 });
+
+export const getMe = asyncHandler(async (req, res) => {
+  // req.user is set by the protect middleware after token verification
+  const user = req.user;
+
+  if (!user) {
+    throw new ErrorResponse('User not found', 404);
+  }
+
+  res.status(200).json({
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      phone: user.phone,
+      email: user.email,
+    },
+  });
+});

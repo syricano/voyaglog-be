@@ -1,5 +1,5 @@
 import express from 'express';
-import  validateRequest  from '../middlewares/validateResquest.js';
+import  validateRequest  from '../middlewares/validateRequest.js';
 import { createUser, getUsers, getUserById, updateUser, deleteUser } from '../controllers/userController.js';
 
 const userRouter = express.Router();

@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { createPost, getPosts, getPostById, updatePost, deletePost } from "../controllers/postController.js";
-import validateRequest from '../middlewares/validateResquest.js';
+import { createPost, getPosts, getPostById, updatePost, deletePost , getMyPosts} from "../controllers/postController.js";
+import validateRequest from '../middlewares/validateRequest.js';
 import upload from "../middlewares/upload.js";
-import { protect } from "../middlewares/auth.js";
+import protect from "../middlewares/protect.js";
 
 // Initialize the router
 const postRouter = Router();
@@ -11,8 +11,13 @@ const postRouter = Router();
 // Get all posts
 postRouter.get("/", getPosts);
 
+// Get my posts (protected route)
+postRouter.get('/my-posts', protect, getMyPosts);
+
 // Get a post by ID
 postRouter.get("/:id", getPostById);
+
+
 
 // Protected routes
 

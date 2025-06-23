@@ -7,6 +7,8 @@ import sequelize from './db/index.js';
 import './db/associations.js'; 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authRoutes from './routes/authRoutes.js';
+import helmet from 'helmet';
 
 // Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +17,9 @@ const __dirname = path.dirname(__filename);
 // Create an instance of express
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+
+app.use(helmet());
 
 // Middleware
 app.use(express.json());
@@ -49,6 +54,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/users', userRouter);
 app.use('/api/posts', postRouter);
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
@@ -59,7 +65,11 @@ sequelize.sync({ alter: true })
   .then(() => {
     console.log('Database synced');
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.table({
+        'Server URL': `http://localhost:${PORT}`,
+        'Environment': process.env.NODE_ENV || 'development',
+        'Database': process.env.DB_URL
+      });
     });
   })
   .catch((err) => {
