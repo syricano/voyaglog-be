@@ -7,8 +7,9 @@ import sequelize from './db/index.js';
 import './db/associations.js'; 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import authRoutes from './routes/authRoutes.js';
+import authRoutes from './routes/authRouter.js';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 // Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -16,17 +17,33 @@ const __dirname = path.dirname(__filename);
 
 // Create an instance of express
 const app = express();
+app.use(cookieParser());
 const PORT = process.env.PORT || 3000;
 
 
-app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'http://localhost:8080', 'data:'],
+      // other directives as needed
+    },
+  })
+);
+
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL, // or wherever your frontend runs
+  credentials: true, // 
+}));
 
 // Serve uploaded images
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}), express.static(path.join(__dirname, 'uploads')));
 
 // Root route
 app.get('/', (req, res) => {
@@ -56,6 +73,16 @@ app.use('/api/users', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/auth', authRoutes);
 
+if (process.env.NODE_ENV === 'production') {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  //*Set static folder up in production
+  const buildPath = path.join(__dirname, '../client/dist');
+  app.use(express.static(buildPath));
+
+  app.get('*splat', (req, res) => res.sendFile(path.join(buildPath, 'index.html')));
+}
+
 // Error handling middleware
 app.use(errorHandler);
 
@@ -72,6 +99,8 @@ sequelize.sync({ alter: true })
       });
     });
   })
+
+  
   .catch((err) => {
     console.error('Failed to sync database:', err);
   });

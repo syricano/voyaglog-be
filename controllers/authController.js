@@ -3,31 +3,46 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
+import { Op } from 'sequelize';
+
 
 const jwtSecret = process.env.JWT_SECRET;
-const jwtExpiration = process.env.JWT_EXPIRATION || '6d';
+const jwtExpiration = process.env.JWT_EXPIRATION || '7d';
 
-// Helper to sign a token
-const signToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email }, jwtSecret, {
-    expiresIn: jwtExpiration,
+// 🔐 Generate JWT token
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user.id, email: user.email, username: user.username },
+    jwtSecret,
+    { expiresIn: jwtExpiration }
+  );
+};
+
+// 🍪 Set token in cookie
+const setTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
 
-// Register new user
+// ✍️ Register
 export const signup = asyncHandler(async (req, res) => {
-  const { body : {firstName, lastName, username, email, password, phone} } = req;
+  const { firstName, lastName, username, email, password, phone } = req.body;
 
-  // Check if user exists
-  const existingUser = await User.findOne({ where: { email } });
-  if (existingUser) {
-    throw new ErrorResponse('Email already registered', 400);
-  }
+  const existingUser = await User.findOne({ where: {
+    [Op.or]: [
+      { email },
+      { username }
+    ]
+  } });
+  if (existingUser) throw new ErrorResponse('User already exists', 400);
 
-  // Hash password
   const hashedPassword = await bcrypt.hash(password, 12);
-
-  // Create user
   const newUser = await User.create({
     firstName,
     lastName,
@@ -37,46 +52,44 @@ export const signup = asyncHandler(async (req, res) => {
     password: hashedPassword,
   });
 
-  // Sign token
-  const token = signToken(newUser);
+  const token = generateToken(newUser);
+  setTokenCookie(res, token);
 
   res.status(201).json({
-    token,
+    message: 'User registered successfully',
     user: {
       id: newUser.id,
       firstName,
       lastName,
       username,
       phone,
-      email: newUser.email,
+      email,
     },
   });
 });
 
-// Login existing user
+// 🔑 Login
 export const login = asyncHandler(async (req, res) => {
-  const { body: {identifier, password }} = req;
-  const trimmedIdentifier = identifier.trim();
+  const { identifier, password } = req.body;
+  const trimmed = identifier.trim();
 
-  // Find user by email or username
-  const user = await User.findOne({ where: {
-      [trimmedIdentifier.includes('@') ? 'email' : 'username']: trimmedIdentifier
-    } });
-  if (!user) {
-    throw new ErrorResponse('Invalid credentials', 401);
-  }
+  const user = await User.findOne({
+    where: {
+      [trimmed.includes('@') ? 'email' : 'username']: trimmed,
+    },
+  });
 
-  // Check password
+  if (!user) throw new ErrorResponse('Invalid credentials', 401);
+
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new ErrorResponse('Invalid credentials', 401);
-  }
+  if (!isMatch) throw new ErrorResponse('Invalid credentials', 401);
 
-  // Sign token
-  const token = signToken(user);
+  const token = generateToken(user);
+  setTokenCookie(res, token);
 
   res.status(200).json({
-    token,
+    message: 'Login successful',
+    token,  // <-- Added token here for frontend
     user: {
       id: user.id,
       firstName: user.firstName,
@@ -88,15 +101,54 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-export const getMe = asyncHandler(async (req, res) => {
-  // req.user is set by the protect middleware after token verification
+// 🧠 Get current user
+export const profile = asyncHandler(async (req, res) => {
   const user = req.user;
-
-  if (!user) {
-    throw new ErrorResponse('User not found', 404);
-  }
+  if (!user) throw new ErrorResponse('User not found', 404);
 
   res.status(200).json({
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
+    phone: user.phone,
+    email: user.email,
+  });
+});
+
+// 🚪 Logout
+export const logout = asyncHandler(async (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+  });
+
+  res.status(200).json({ message: 'Logged out successfully' });
+});
+
+// ✏️ Update User
+export const updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { firstName, lastName, username, email, phone, password } = req.body;
+
+  const user = await User.findByPk(id);
+  if (!user) throw new ErrorResponse('User not found', 404);
+
+  user.firstName = firstName || user.firstName;
+  user.lastName = lastName || user.lastName;
+  user.username = username || user.username;
+  user.email = email || user.email;
+  user.phone = phone || user.phone;
+  if (password) {
+    user.password = await bcrypt.hash(password, 12);
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    message: 'User updated successfully',
     user: {
       id: user.id,
       firstName: user.firstName,

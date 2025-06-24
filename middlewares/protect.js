@@ -1,32 +1,31 @@
 import jwt from 'jsonwebtoken';
-import asyncHandler from '../utils/asyncHandler.js';
 import User from '../models/User.js';
+import asyncHandler from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 
-const jwtSecret = process.env.JWT_SECRET;
-
 const protect = asyncHandler(async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  // Try cookie first, then header
+  const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer') 
+    ? req.headers.authorization.split(' ')[1] 
+    : null);
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new ErrorResponse('Not authorized, token missing', 401));
-  }
-
-  const token = authHeader.split(' ')[1];
+  if (!token) throw new ErrorResponse('Not authorized, no token provided', 401);
 
   try {
-    const decoded = jwt.verify(token, jwtSecret);
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findByPk(decoded.id);
-    if (!user) {
-      return next(new ErrorResponse('User not found', 404));
-    }
+    if (!user) throw new ErrorResponse('User not found', 404);
+    
+    console.log('Token verified:', decoded);
 
     req.user = user;
     next();
   } catch (err) {
-    return next(new ErrorResponse('Not authorized, token invalid', 401));
+    console.log('Token verification failed:', err.message);
+    throw new ErrorResponse('Invalid token', 401);
   }
 });
+
+
 
 export default protect;
