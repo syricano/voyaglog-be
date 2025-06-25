@@ -5,7 +5,6 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 import { Op } from 'sequelize';
 
-
 const jwtSecret = process.env.JWT_SECRET;
 const jwtExpiration = process.env.JWT_EXPIRATION || '7d';
 
@@ -31,41 +30,61 @@ const setTokenCookie = (res, token) => {
 };
 
 // ✍️ Register
-export const signup = asyncHandler(async (req, res) => {
+export const signup = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, username, email, password, phone } = req.body;
+  console.log('📥 Incoming signup data:', req.body);
 
-  const existingUser = await User.findOne({ where: {
-    [Op.or]: [
-      { email },
-      { username }
-    ]
-  } });
-  if (existingUser) throw new ErrorResponse('User already exists', 400);
-
-  const hashedPassword = await bcrypt.hash(password, 12);
-  const newUser = await User.create({
-    firstName,
-    lastName,
-    username,
-    phone,
-    email,
-    password: hashedPassword,
+  const existingUser = await User.findOne({
+    where: {
+      [Op.or]: [{ email }, { username }],
+    },
   });
 
-  const token = generateToken(newUser);
-  setTokenCookie(res, token);
+  if (existingUser) {
+    console.warn('⚠️ User already exists:', existingUser.username);
+    throw new ErrorResponse('User already exists', 400);
+  }
 
-  res.status(201).json({
-    message: 'User registered successfully',
-    user: {
-      id: newUser.id,
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  try {
+    const newUser = await User.create({
       firstName,
       lastName,
       username,
       phone,
       email,
-    },
-  });
+      password: hashedPassword,
+    });
+
+    console.log('✅ User created:', newUser?.id);
+
+    const token = generateToken(newUser);
+    setTokenCookie(res, token);
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: {
+        id: newUser.id,
+        firstName,
+        lastName,
+        username,
+        phone,
+        email,
+      },
+    });
+  } catch (err) {
+    console.error('❌ Sequelize error during User.create:', err);
+    if (
+      err.name === 'SequelizeValidationError' ||
+      err.name === 'SequelizeUniqueConstraintError'
+    ) {
+      return res.status(400).json({
+        error: err.errors?.[0]?.message || 'Validation error',
+      });
+    }
+    return next(new ErrorResponse('Signup failed', 500));
+  }
 });
 
 // 🔑 Login
@@ -89,7 +108,7 @@ export const login = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     message: 'Login successful',
-    token,  // <-- Added token here for frontend
+    token,
     user: {
       id: user.id,
       firstName: user.firstName,
@@ -141,6 +160,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   user.username = username || user.username;
   user.email = email || user.email;
   user.phone = phone || user.phone;
+
   if (password) {
     user.password = await bcrypt.hash(password, 12);
   }

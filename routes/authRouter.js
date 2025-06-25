@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/profile', protect, profile);
 
 // Signup route with validation
-router.post('/signup', validateZod(userSchema), signup);
+router.post('/signup', validateZod(userSchema.POST), signup);
 
 // Login route with validation (no protect middleware here!)
 router.post('/login', validateZod(signInSchema), login);
