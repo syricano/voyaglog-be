@@ -35,7 +35,7 @@ Setup
 
    DB_URL=postgres://user:password@host:port/database
    JWT_SECRET=your_jwt_secret_key
-   PORT=3000
+   PORT=8080
    NODE_ENV=development
 
 4. Make sure PostgreSQL is running and accessible with your `DB_URL`.
@@ -48,7 +48,7 @@ Start the server with:
 
 npm start
 
-The API will be available at `http://localhost:3000`.
+The API will be available at `http://localhost:8080`.
 
 ---
 
@@ -123,7 +123,7 @@ Static Files
 
 - Uploaded images are served statically at:
 
-  http://localhost:3000/uploads/<filename>
+  http://localhost:8080/uploads/<filename>
 
 ---
 
@@ -131,13 +131,13 @@ Example Usage (Frontend)
 
 Fetch all posts
 
-fetch('http://localhost:3000/api/posts')
+fetch('http://localhost:8080/api/posts')
   .then(res => res.json())
   .then(data => console.log(data));
 
 Login
 
-fetch('http://localhost:3000/api/auth/login', {
+fetch('http://localhost:8080/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ identifier: 'user@example.com', password: 'password123' }),
@@ -152,7 +152,7 @@ Authenticated request example (get my posts)
 
 const token = localStorage.getItem('token');
 
-fetch('http://localhost:3000/api/posts/my-posts', {
+fetch('http://localhost:8080/api/posts/my-posts', {
   headers: {
     Authorization: `Bearer ${token}`,
   },
