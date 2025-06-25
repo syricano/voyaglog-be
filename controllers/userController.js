@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import asyncHandler from '../utils/asyncHandler.js';
 import ErrorResponse from '../utils/ErrorResponse.js';
 
-const saltRounds = 10;
+const saltRounds = 8;
 
 
 
