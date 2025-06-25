@@ -89,7 +89,11 @@ export const signup = asyncHandler(async (req, res, next) => {
 
 // 🔑 Login
 export const login = asyncHandler(async (req, res) => {
-  const { identifier, password } = req.body;
+  const { identifier, password } = req.body || {};
+  if (!identifier || !password) {
+  throw new ErrorResponse('Missing email/username or password', 400);
+  }
+
   const trimmed = identifier.trim();
 
   const user = await User.findOne({
